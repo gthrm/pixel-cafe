@@ -67,41 +67,20 @@ function drawCustomer(c) {
 }
 
 function drawCoffeeMachine(m) {
-    // Main body
-    ctx.fillStyle = '#3d405b'; // Dark metal
-    ctx.fillRect(m.x, m.y, m.width, m.height);
-    // Top part
-    ctx.fillStyle = '#2a2d3e';
-    ctx.fillRect(m.x, m.y, m.width, 20);
-    // Silver panel
-    ctx.fillStyle = '#c0c0c0'; // Silver
-    ctx.fillRect(m.x + 10, m.y + 25, m.width - 20, 30);
-    // Buttons
-    ctx.fillStyle = '#e07a5f'; // Red button
-    ctx.fillRect(m.x + 20, m.y + 35, 10, 10);
-    ctx.fillStyle = '#81b29a'; // Green button
-    ctx.fillRect(m.x + 50, m.y + 35, 10, 10);
-    // Nozzle
-    ctx.fillStyle = '#555555';
-    ctx.fillRect(m.x + 35, m.y + 55, 10, 15);
-    // Drip tray
-    ctx.fillStyle = '#111111';
-    ctx.fillRect(m.x + 10, m.y + 70, m.width - 20, 10);
+    ctx.fillStyle = '#3d405b'; ctx.fillRect(m.x, m.y, m.width, m.height);
+    ctx.fillStyle = '#2a2d3e'; ctx.fillRect(m.x, m.y, m.width, 20);
+    ctx.fillStyle = '#c0c0c0'; ctx.fillRect(m.x + 10, m.y + 25, m.width - 20, 30);
+    ctx.fillStyle = '#e07a5f'; ctx.fillRect(m.x + 20, m.y + 35, 10, 10);
+    ctx.fillStyle = '#81b29a'; ctx.fillRect(m.x + 50, m.y + 35, 10, 10);
+    ctx.fillStyle = '#555555'; ctx.fillRect(m.x + 35, m.y + 55, 10, 15);
+    ctx.fillStyle = '#111111'; ctx.fillRect(m.x + 10, m.y + 70, m.width - 20, 10);
 }
 
 function drawCroissantOven(m) {
-    // Main body
-    ctx.fillStyle = '#444444'; // Dark grey
-    ctx.fillRect(m.x, m.y, m.width, m.height);
-    // Oven door
-    ctx.fillStyle = '#222222';
-    ctx.fillRect(m.x + 5, m.y + 5, m.width - 10, m.height - 10);
-    // Window
-    ctx.fillStyle = '#f4a460'; // Orange glow
-    ctx.fillRect(m.x + 15, m.y + 15, m.width - 30, m.height - 40);
-    // Handle
-    ctx.fillStyle = '#666666';
-    ctx.fillRect(m.x + 10, m.y + m.height - 20, m.width - 20, 5);
+    ctx.fillStyle = '#444444'; ctx.fillRect(m.x, m.y, m.width, m.height);
+    ctx.fillStyle = '#222222'; ctx.fillRect(m.x + 5, m.y + 5, m.width - 10, m.height - 10);
+    ctx.fillStyle = '#f4a460'; ctx.fillRect(m.x + 15, m.y + 15, m.width - 30, m.height - 40);
+    ctx.fillStyle = '#666666'; ctx.fillRect(m.x + 10, m.y + m.height - 20, m.width - 20, 5);
 }
 
 const pixelFont = {
@@ -132,23 +111,21 @@ function drawCounter(c) {
 }
 
 function drawTrashCan(t) {
-    ctx.fillStyle = '#6c757d'; // Grey
-    ctx.fillRect(t.x, t.y, t.width, t.height);
-    ctx.fillStyle = '#495057'; // Darker grey lid
-    ctx.fillRect(t.x - 5, t.y, t.width + 10, 5);
+    ctx.fillStyle = '#6c757d'; ctx.fillRect(t.x, t.y, t.width, t.height);
+    ctx.fillStyle = '#495057'; ctx.fillRect(t.x - 5, t.y, t.width + 10, 5);
 }
 
 // --- Game Objects & State ---
-const player = { x: 400, y: 150, width: 40, height: 40, speed: 4, holding: 'none' }; // none, coffee, croissant
+const player = { x: 400, y: 150, width: 40, height: 40, speed: 4, holding: 'none' };
 const coffeeMachine = { x: 700, y: 80, width: 80, height: 80 };
-const croissantOven = { x: 20, y: 80, width: 80, height: 80 }; // Moved to the left
+const croissantOven = { x: 20, y: 80, width: 80, height: 80 };
 const trashCan = { x: 380, y: 80, width: 40, height: 60 };
 const counter = { x: 0, y: 250, width: canvas.width, height: 80 };
 const waitingSpots = [ { x: 150, y: 350 }, { x: 250, y: 350 }, { x: 350, y: 350 }, { x: 450, y: 350 }];
 const customerColors = { hair: ['#c9a227', '#6a3e29', '#000000'], shirt: ['#9d8189', '#5f9ea0', '#a0a0a0'] };
 
 let activeCustomers = [];
-let level = 1, score = 0, timer = 60;
+let level = 1, money = 0, timer = 60;
 let gameRunning = false;
 let spawnInterval, timerInterval;
 
@@ -171,12 +148,12 @@ const sfxButton = document.getElementById('toggle-sfx');
 const startButton = document.getElementById('start-button');
 const startScreen = document.getElementById('start-screen');
 
+let joystick = { active: false, startX: 0, startY: 0, dx: 0, dy: 0 };
+
 musicButton.addEventListener('click', () => {
     musicEnabled = !musicEnabled;
     musicButton.classList.toggle('muted', !musicEnabled);
-    if (gameRunning) {
-        musicEnabled ? sounds.music.play() : sounds.music.pause();
-    }
+    if (gameRunning) musicEnabled ? sounds.music.play() : sounds.music.pause();
 });
 
 sfxButton.addEventListener('click', () => {
@@ -185,40 +162,33 @@ sfxButton.addEventListener('click', () => {
 });
 
 function playSound(sound) {
-    if (sfxEnabled) {
-        sound.currentTime = 0;
-        sound.play();
-    }
+    if (sfxEnabled) { sound.currentTime = 0; sound.play(); }
 }
 
 function startGame() {
     if (gameRunning) return;
     gameRunning = true;
-
-    if (musicEnabled) {
-        sounds.music.play();
-    }
-
+    if (musicEnabled) sounds.music.play();
     startScreen.style.display = 'none';
-
-    // Start game timers
     spawnInterval = setInterval(spawnCustomer, 3000 / level);
     timerInterval = setInterval(() => {
         timer -= 1;
         if (timer <= 0) {
-            alert(`Game Over! Your score: ${score}`);
+            alert(`Shift Over! You earned: ${money.toFixed(2)}€`);
             level++;
             timer = 60 - (level - 1) * 5;
-            score = 0;
+            money = 0;
             activeCustomers = [];
+            clearInterval(spawnInterval);
+            clearInterval(timerInterval);
+            gameRunning = false;
+            startScreen.style.display = 'flex';
         }
     }, 1000);
-
     gameLoop();
 }
 
 startButton.addEventListener('click', startGame);
-
 
 // --- Game Logic ---
 const keys = {};
@@ -226,30 +196,30 @@ document.addEventListener('keydown', (e) => keys[e.key] = true);
 document.addEventListener('keyup', (e) => keys[e.key] = false);
 
 function movePlayer() {
-    if (keys['ArrowUp'] && player.y > 0) player.y -= player.speed;
-    if (keys['ArrowDown'] && (player.y + player.height) < counter.y) {
-        player.y = Math.min(player.y + player.speed, counter.y - player.height);
+    if (keys['ArrowUp']) player.y -= player.speed;
+    if (keys['ArrowDown']) player.y += player.speed;
+    if (keys['ArrowLeft']) player.x -= player.speed;
+    if (keys['ArrowRight']) player.x += player.speed;
+    if (joystick.active && (joystick.dx !== 0 || joystick.dy !== 0)) {
+        const magnitude = Math.sqrt(joystick.dx * joystick.dx + joystick.dy * joystick.dy);
+        player.x += (joystick.dx / magnitude) * player.speed;
+        player.y += (joystick.dy / magnitude) * player.speed;
     }
-    if (keys['ArrowLeft'] && player.x > 0) player.x -= player.speed;
-    if (keys['ArrowRight'] && player.x < canvas.width - player.width) player.x += player.speed;
+    player.x = Math.max(0, Math.min(player.x, canvas.width - player.width));
+    player.y = Math.max(0, Math.min(player.y, counter.y - player.height));
 }
 
 function spawnCustomer() {
     const orderingOrEnteringCount = activeCustomers.filter(c => c.state === 'ORDERING' || c.state === 'ENTERING').length;
     if (orderingOrEnteringCount >= waitingSpots.length) return;
-
     const rand = Math.random();
-    let order;
-    if (rand < 0.4) order = { coffee: true, croissant: false };
-    else if (rand < 0.8) order = { coffee: false, croissant: true };
-    else order = { coffee: true, croissant: true };
-
+    let order, price;
+    if (rand < 0.4) { order = { coffee: true, croissant: false }; price = 2; }
+    else if (rand < 0.8) { order = { coffee: false, croissant: true }; price = 1; }
+    else { order = { coffee: true, croissant: true }; price = 3; }
     const newCustomer = {
-        x: -50, y: 350, width: 40, height: 40,
-        targetX: -50, targetY: 350,
-        state: 'ENTERING',
-        isAngry: false,
-        order: order,
+        x: -50, y: 350, width: 40, height: 40, targetX: -50, targetY: 350,
+        state: 'ENTERING', isAngry: false, order: order, price: price,
         hairColor: customerColors.hair[Math.floor(Math.random() * customerColors.hair.length)],
         shirtColor: customerColors.shirt[Math.floor(Math.random() * customerColors.shirt.length)],
     };
@@ -258,20 +228,16 @@ function spawnCustomer() {
 
 function updateCustomers() {
     const queue = activeCustomers.filter(c => c.state === 'ENTERING' || c.state === 'ORDERING');
-
     activeCustomers.forEach(c => {
         if (c.state === 'ENTERING' || c.state === 'ORDERING') {
             const queueIndex = queue.indexOf(c);
             if (queueIndex !== -1) c.targetX = waitingSpots[queueIndex].x;
         }
-
         const speed = 2;
         if (c.x < c.targetX) c.x = Math.min(c.x + speed, c.targetX);
         else if (c.x > c.targetX) c.x = Math.max(c.x - speed, c.targetX);
-
         if (c.state === 'ENTERING' && c.x === c.targetX) c.state = 'ORDERING';
     });
-
     activeCustomers = activeCustomers.filter(c => {
         if (c.state === 'LEAVING') return c.x > -50 && c.x < canvas.width + 50;
         return true;
@@ -285,50 +251,37 @@ function checkCollision(rect1, rect2) {
 
 function handleServing() {
     if (player.holding === 'none' || player.y + player.height < counter.y) return;
-
     const customerToServe = activeCustomers.find(c =>
-        c.state === 'ORDERING' &&
-        (Math.abs((player.x + player.width / 2) - (c.x + c.width / 2)) < (c.width / 2))
+        c.state === 'ORDERING' && (Math.abs((player.x + player.width / 2) - (c.x + c.width / 2)) < (c.width / 2))
     );
-
     if (customerToServe) {
         const item = player.holding;
         let served = false;
-
         if (item === 'coffee' && customerToServe.order.coffee) {
-            customerToServe.order.coffee = false;
-            served = true;
+            customerToServe.order.coffee = false; served = true;
         } else if (item === 'croissant' && customerToServe.order.croissant) {
-            customerToServe.order.croissant = false;
-            served = true;
+            customerToServe.order.croissant = false; served = true;
         }
-
         if (served) {
             player.holding = 'none';
             playSound(sounds.pickup);
             const isOrderComplete = !customerToServe.order.coffee && !customerToServe.order.croissant;
-
             if (isOrderComplete) {
                 const queue = activeCustomers.filter(c => c.state === 'ORDERING' || c.state === 'ENTERING');
                 const servedIndex = queue.indexOf(customerToServe);
-
                 if (servedIndex === 0) {
-                    score++;
+                    money += customerToServe.price;
                     playSound(sounds.success);
-                    customerToServe.state = 'LEAVING';
-                    customerToServe.targetX = canvas.width + 50;
                 } else if (servedIndex > 0) {
                     const skippedCustomers = queue.slice(0, servedIndex);
                     skippedCustomers.forEach(skipped => {
-                        skipped.isAngry = true;
-                        skipped.state = 'LEAVING';
-                        skipped.targetX = -50;
-                        score -= 0.5;
-                        playSound(sounds.error);
+                        skipped.isAngry = true; skipped.state = 'LEAVING'; skipped.targetX = -50;
+                        money -= 1; playSound(sounds.error);
                     });
-                    customerToServe.state = 'LEAVING';
-                    customerToServe.targetX = canvas.width + 50;
+                    money += customerToServe.price;
                 }
+                customerToServe.state = 'LEAVING';
+                customerToServe.targetX = canvas.width + 50;
             }
         }
     }
@@ -343,110 +296,61 @@ function gameLoop() {
     drawCoffeeMachine(coffeeMachine);
     drawCroissantOven(croissantOven);
     drawTrashCan(trashCan);
-    
     updateCustomers();
     handleServing();
-    
     activeCustomers.forEach(drawCustomer);
-
-    if (player.holding === 'none') {
-        if (checkCollision(player, coffeeMachine)) player.holding = 'coffee';
-        else if (checkCollision(player, croissantOven)) player.holding = 'croissant';
-    } else { // If holding something, check for trash can
-        if (checkCollision(player, trashCan)) {
-            player.holding = 'none';
-            playSound(sounds.trash);
-        }
+    if (player.holding !== 'none' && checkCollision(player, trashCan)) {
+        player.holding = 'none';
+        money -= 0.5;
+        playSound(sounds.trash);
+    } else if (player.holding === 'none') {
+        if (checkCollision(player, coffeeMachine)) { player.holding = 'coffee'; playSound(sounds.pickup); }
+        else if (checkCollision(player, croissantOven)) { player.holding = 'croissant'; playSound(sounds.pickup); }
     }
-
     ctx.fillStyle = 'white'; ctx.strokeStyle = 'black'; ctx.lineWidth = 2;
     ctx.font = '20px Arial';
     ctx.strokeText(`Level: ${level}`, 10, 20); ctx.fillText(`Level: ${level}`, 10, 20);
-    ctx.strokeText(`Score: ${score}`, 10, 40); ctx.fillText(`Score: ${score}`, 10, 40);
+    ctx.strokeText(`Money: ${money.toFixed(2)}€`, 10, 40); ctx.fillText(`Money: ${money.toFixed(2)}€`, 10, 40);
     ctx.strokeText(`Time: ${Math.ceil(timer)}`, 700, 20); ctx.fillText(`Time: ${Math.ceil(timer)}`, 700, 20);
-
-    requestAnimationFrame(gameLoop);
+    if (gameRunning) requestAnimationFrame(gameLoop);
 }
-
-// --- Timers ---
-// setInterval(spawnCustomer, 3000 / level);
-// setInterval(() => {
-//     timer -= 1;
-//     if (timer <= 0) {
-//         alert(`Game Over! Your score: ${score}`);
-//         level++;
-//         timer = 60 - (level - 1) * 5;
-//         score = 0;
-//         activeCustomers = [];
-//     }
-// }, 1000);
-
-gameLoop();
 
 // --- Joystick Logic ---
 const joystickContainer = document.getElementById('joystick-container');
 const joystickStick = document.getElementById('joystick-stick');
-let joystickActive = false;
-let joystickStartX = 0;
-let joystickStartY = 0;
 
 function handleJoystickStart(e) {
-    joystickActive = true;
+    joystick.active = true;
     const touch = e.changedTouches ? e.changedTouches[0] : e;
-    joystickStartX = touch.clientX;
-    joystickStartY = touch.clientY;
+    joystick.startX = touch.clientX;
+    joystick.startY = touch.clientY;
 }
 
 function handleJoystickMove(e) {
-    if (!joystickActive) return;
+    if (!joystick.active) return;
     e.preventDefault();
     const touch = e.changedTouches ? e.changedTouches[0] : e;
-    const deltaX = touch.clientX - joystickStartX;
-    const deltaY = touch.clientY - joystickStartY;
-
-    const angle = Math.atan2(deltaY, deltaX);
-    const distance = Math.min(30, Math.sqrt(deltaX * deltaX + deltaY * deltaY));
-
+    joystick.dx = touch.clientX - joystick.startX;
+    joystick.dy = touch.clientY - joystick.startY;
+    const angle = Math.atan2(joystick.dy, joystick.dx);
+    const distance = Math.min(30, Math.sqrt(joystick.dx * joystick.dx + joystick.dy * joystick.dy));
     const stickX = distance * Math.cos(angle);
     const stickY = distance * Math.sin(angle);
-
     joystickStick.style.transform = `translate(${stickX}px, ${stickY}px)`;
-
-    // Reset keys
-    keys['ArrowUp'] = false;
-    keys['ArrowDown'] = false;
-    keys['ArrowLeft'] = false;
-    keys['ArrowRight'] = false;
-
-    // Determine direction based on angle
-    if (Math.abs(deltaX) > Math.abs(deltaY)) { // Horizontal movement
-        if (deltaX > 10) keys['ArrowRight'] = true;
-        else if (deltaX < -10) keys['ArrowLeft'] = true;
-    } else { // Vertical movement
-        if (deltaY > 10) keys['ArrowDown'] = true;
-        else if (deltaY < -10) keys['ArrowUp'] = true;
-    }
 }
 
 function handleJoystickEnd(e) {
-    if (!joystickActive) return;
-    joystickActive = false;
+    if (!joystick.active) return;
+    joystick.active = false;
+    joystick.dx = 0;
+    joystick.dy = 0;
     joystickStick.style.transform = 'translate(0, 0)';
-    // Reset all keys
-    keys['ArrowUp'] = false;
-    keys['ArrowDown'] = false;
-    keys['ArrowLeft'] = false;
-    keys['ArrowRight'] = false;
 }
 
-// Touch events for mobile
 joystickContainer.addEventListener('touchstart', handleJoystickStart, { passive: false });
 joystickContainer.addEventListener('touchmove', handleJoystickMove, { passive: false });
 joystickContainer.addEventListener('touchend', handleJoystickEnd);
 joystickContainer.addEventListener('touchcancel', handleJoystickEnd);
-
-// Mouse events for debugging on desktop
-joystickContainer.addEventListener('mousedown', handleJoystickStart);
+document.addEventListener('mousedown', (e) => { if(e.target === joystickContainer || e.target === joystickStick) handleJoystickStart(e); });
 document.addEventListener('mousemove', handleJoystickMove);
 document.addEventListener('mouseup', handleJoystickEnd);
-
