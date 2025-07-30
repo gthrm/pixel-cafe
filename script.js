@@ -131,16 +131,94 @@ function drawCounter(c) {
     drawPixelText('COFFEE', c.x + 150, c.y + 35, 5, '#f2e9e4');
 }
 
+function drawTrashCan(t) {
+    ctx.fillStyle = '#6c757d'; // Grey
+    ctx.fillRect(t.x, t.y, t.width, t.height);
+    ctx.fillStyle = '#495057'; // Darker grey lid
+    ctx.fillRect(t.x - 5, t.y, t.width + 10, 5);
+}
+
 // --- Game Objects & State ---
 const player = { x: 400, y: 150, width: 40, height: 40, speed: 4, holding: 'none' }; // none, coffee, croissant
 const coffeeMachine = { x: 700, y: 80, width: 80, height: 80 };
 const croissantOven = { x: 20, y: 80, width: 80, height: 80 }; // Moved to the left
+const trashCan = { x: 380, y: 80, width: 40, height: 60 };
 const counter = { x: 0, y: 250, width: canvas.width, height: 80 };
 const waitingSpots = [ { x: 150, y: 350 }, { x: 250, y: 350 }, { x: 350, y: 350 }, { x: 450, y: 350 }];
 const customerColors = { hair: ['#c9a227', '#6a3e29', '#000000'], shirt: ['#9d8189', '#5f9ea0', '#a0a0a0'] };
 
 let activeCustomers = [];
 let level = 1, score = 0, timer = 60;
+let gameRunning = false;
+let spawnInterval, timerInterval;
+
+// --- Audio ---
+const sounds = {
+    pickup: new Audio('audio/pickup.wav'),
+    success: new Audio('audio/success.wav'),
+    error: new Audio('audio/error.wav'),
+    trash: new Audio('audio/trash.wav'),
+    music: new Audio('audio/music.mp3'),
+};
+sounds.music.loop = true;
+sounds.music.volume = 0.3;
+
+let musicEnabled = true;
+let sfxEnabled = true;
+
+const musicButton = document.getElementById('toggle-music');
+const sfxButton = document.getElementById('toggle-sfx');
+const startButton = document.getElementById('start-button');
+const startScreen = document.getElementById('start-screen');
+
+musicButton.addEventListener('click', () => {
+    musicEnabled = !musicEnabled;
+    musicButton.classList.toggle('muted', !musicEnabled);
+    if (gameRunning) {
+        musicEnabled ? sounds.music.play() : sounds.music.pause();
+    }
+});
+
+sfxButton.addEventListener('click', () => {
+    sfxEnabled = !sfxEnabled;
+    sfxButton.classList.toggle('muted', !sfxEnabled);
+});
+
+function playSound(sound) {
+    if (sfxEnabled) {
+        sound.currentTime = 0;
+        sound.play();
+    }
+}
+
+function startGame() {
+    if (gameRunning) return;
+    gameRunning = true;
+
+    if (musicEnabled) {
+        sounds.music.play();
+    }
+
+    startScreen.style.display = 'none';
+
+    // Start game timers
+    spawnInterval = setInterval(spawnCustomer, 3000 / level);
+    timerInterval = setInterval(() => {
+        timer -= 1;
+        if (timer <= 0) {
+            alert(`Game Over! Your score: ${score}`);
+            level++;
+            timer = 60 - (level - 1) * 5;
+            score = 0;
+            activeCustomers = [];
+        }
+    }, 1000);
+
+    gameLoop();
+}
+
+startButton.addEventListener('click', startGame);
+
 
 // --- Game Logic ---
 const keys = {};
@@ -227,6 +305,7 @@ function handleServing() {
 
         if (served) {
             player.holding = 'none';
+            playSound(sounds.pickup);
             const isOrderComplete = !customerToServe.order.coffee && !customerToServe.order.croissant;
 
             if (isOrderComplete) {
@@ -235,6 +314,7 @@ function handleServing() {
 
                 if (servedIndex === 0) {
                     score++;
+                    playSound(sounds.success);
                     customerToServe.state = 'LEAVING';
                     customerToServe.targetX = canvas.width + 50;
                 } else if (servedIndex > 0) {
@@ -244,6 +324,7 @@ function handleServing() {
                         skipped.state = 'LEAVING';
                         skipped.targetX = -50;
                         score -= 0.5;
+                        playSound(sounds.error);
                     });
                     customerToServe.state = 'LEAVING';
                     customerToServe.targetX = canvas.width + 50;
@@ -261,6 +342,7 @@ function gameLoop() {
     drawBarista(player);
     drawCoffeeMachine(coffeeMachine);
     drawCroissantOven(croissantOven);
+    drawTrashCan(trashCan);
     
     updateCustomers();
     handleServing();
@@ -270,6 +352,11 @@ function gameLoop() {
     if (player.holding === 'none') {
         if (checkCollision(player, coffeeMachine)) player.holding = 'coffee';
         else if (checkCollision(player, croissantOven)) player.holding = 'croissant';
+    } else { // If holding something, check for trash can
+        if (checkCollision(player, trashCan)) {
+            player.holding = 'none';
+            playSound(sounds.trash);
+        }
     }
 
     ctx.fillStyle = 'white'; ctx.strokeStyle = 'black'; ctx.lineWidth = 2;
@@ -282,17 +369,17 @@ function gameLoop() {
 }
 
 // --- Timers ---
-setInterval(spawnCustomer, 3000 / level);
-setInterval(() => {
-    timer -= 1;
-    if (timer <= 0) {
-        alert(`Game Over! Your score: ${score}`);
-        level++;
-        timer = 60 - (level - 1) * 5;
-        score = 0;
-        activeCustomers = [];
-    }
-}, 1000);
+// setInterval(spawnCustomer, 3000 / level);
+// setInterval(() => {
+//     timer -= 1;
+//     if (timer <= 0) {
+//         alert(`Game Over! Your score: ${score}`);
+//         level++;
+//         timer = 60 - (level - 1) * 5;
+//         score = 0;
+//         activeCustomers = [];
+//     }
+// }, 1000);
 
 gameLoop();
 

@@ -7,9 +7,18 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>Coffee Shop</h1>
+    <div class="top-bar">
+        <h1>Coffee Shop</h1>
+        <div class="sound-controls">
+            <button id="toggle-music">🎵</button>
+            <button id="toggle-sfx">🔊</button>
+        </div>
+    </div>
     <div id="game-container">
         <canvas id="game-canvas" width="800" height="600"></canvas>
+        <div id="start-screen">
+            <button id="start-button">Начать игру</button>
+        </div>
         <div id="joystick-container">
             <div id="joystick-stick"></div>
         </div>
