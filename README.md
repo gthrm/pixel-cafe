@@ -2,7 +2,7 @@
 
 A frantic, retro-style arcade game about serving coffee and croissants as fast as you can! Test your speed and multitasking skills as the queue of thirsty customers grows longer and the timer ticks down.
 
-![Gameplay Screenshot](https://i.imgur.com/your-gameplay-image.gif) 
+<img width="826" height="624" alt="Screenshot" src="https://github.com/user-attachments/assets/a7cbee98-214e-4530-a37c-f6bb8c972211" />
 *<(You can replace this with a link to your own gameplay GIF or screenshot)>*
 
 ## 🕹️ Gameplay
