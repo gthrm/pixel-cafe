@@ -5,8 +5,8 @@ const ctx = canvas.getContext('2d');
 const ui = {
     title: { x: canvas.width / 2, y: 150, text: "PIXEL CAFE" },
     startButton: { x: canvas.width / 2 - 150, y: 280, width: 300, height: 70, text: "Start Game" },
-    musicButton: { x: 740, y: 45, width: 40, height: 40 },
-    sfxButton: { x: 680, y: 45, width: 40, height: 40 },
+    musicButton: { x: 750, y: 10, width: 40, height: 40 },
+    sfxButton: { x: 700, y: 10, width: 40, height: 40 },
 };
 
 // --- Drawing Functions ---
@@ -132,7 +132,9 @@ function drawCounter(c) {
     ctx.fillStyle = '#80421d'; ctx.fillRect(c.x, c.y, c.width, 20);
     ctx.fillStyle = '#5c2f10'; ctx.fillRect(c.x + 20, c.y + c.height, 30, canvas.height - c.y - c.height);
     ctx.fillRect(c.x + c.width - 50, c.y + c.height, 30, canvas.height - c.y - c.height);
+}
 
+function drawCounterDecorations() {
     // Cash Register
     ctx.fillStyle = '#888888';
     ctx.fillRect(100, 220, 40, 30);
@@ -142,6 +144,7 @@ function drawCounter(c) {
     // Order Here Sign
     drawPixelText('Order Here', 100, 260, 10, '#FFFFFF');
 }
+
 
 function drawTrashCan(t) {
     ctx.fillStyle = '#6c757d'; ctx.fillRect(t.x, t.y, t.width, t.height);
@@ -185,7 +188,7 @@ function drawSfxIcon(x, y) {
 
 function drawGameUI() {
     drawPixelText(`Money: ${money.toFixed(2)}€`, 10, 20, 16, '#FFFFFF');
-    drawPixelText(`Time: ${Math.ceil(timer)}`, canvas.width - 10, 20, 16, '#FFFFFF', 'right');
+    drawPixelText(`Time: ${Math.ceil(timer)}`, 690, 20, 16, '#FFFFFF', 'right');
 
     drawMusicIcon(ui.musicButton.x, ui.musicButton.y);
     drawSfxIcon(ui.sfxButton.x, ui.sfxButton.y);
@@ -440,7 +443,8 @@ function draw() {
         drawCounter(counter);
         machines.forEach(drawMachine);
         drawTrashCan(trashCan);
-        drawBarista(player); // Draw player on top of machines
+        drawBarista(player);
+        drawCounterDecorations();
         activeCustomers.forEach(drawCustomer);
         drawGameUI();
         if (gameState === 'over') {
