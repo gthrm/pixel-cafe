@@ -1,6 +1,14 @@
 const canvas = document.getElementById('game-canvas');
 const ctx = canvas.getContext('2d');
 
+// --- UI Element Definitions ---
+const ui = {
+    title: { x: canvas.width / 2, y: 150, text: "PIXEL CAFE" },
+    startButton: { x: canvas.width / 2 - 150, y: 280, width: 300, height: 70, text: "Start Game" },
+    musicButton: { x: 740, y: 45, width: 40, height: 40 },
+    sfxButton: { x: 680, y: 45, width: 40, height: 40 },
+};
+
 // --- Drawing Functions ---
 function drawFloor() {
     const tileSize = 40;
@@ -83,23 +91,12 @@ function drawCroissantOven(m) {
     ctx.fillStyle = '#666666'; ctx.fillRect(m.x + 10, m.y + m.height - 20, m.width - 20, 5);
 }
 
-const pixelFont = {
-    'C': [[1,1,1],[1,0,0],[1,0,0],[1,0,0],[1,1,1]], 'O': [[1,1,1],[1,0,1],[1,0,1],[1,0,1],[1,1,1]],
-    'F': [[1,1,1],[1,0,0],[1,1,0],[1,0,0],[1,0,0]], 'E': [[1,1,1],[1,0,0],[1,1,0],[1,0,0],[1,1,1]],
-};
-
-function drawPixelText(text, startX, startY, pixelSize, color) {
+function drawPixelText(text, x, y, size, color, align = 'left', baseline = 'top') {
+    ctx.font = `${size}px "Press Start 2P"`;
     ctx.fillStyle = color;
-    let currentX = startX;
-    for (const char of text) {
-        const matrix = pixelFont[char.toUpperCase()]; if (!matrix) continue;
-        for (let y = 0; y < matrix.length; y++) {
-            for (let x = 0; x < matrix[y].length; x++) {
-                if (matrix[y][x] === 1) ctx.fillRect(currentX + x * pixelSize, startY + y * pixelSize, pixelSize, pixelSize);
-            }
-        }
-        currentX += (matrix[0].length + 1) * pixelSize;
-    }
+    ctx.textAlign = align;
+    ctx.textBaseline = baseline;
+    ctx.fillText(text, x, y);
 }
 
 function drawCounter(c) {
@@ -107,13 +104,65 @@ function drawCounter(c) {
     ctx.fillStyle = '#80421d'; ctx.fillRect(c.x, c.y, c.width, 20);
     ctx.fillStyle = '#5c2f10'; ctx.fillRect(c.x + 20, c.y + c.height, 30, canvas.height - c.y - c.height);
     ctx.fillRect(c.x + c.width - 50, c.y + c.height, 30, canvas.height - c.y - c.height);
-    drawPixelText('COFFEE', c.x + 150, c.y + 35, 5, '#f2e9e4');
 }
 
 function drawTrashCan(t) {
     ctx.fillStyle = '#6c757d'; ctx.fillRect(t.x, t.y, t.width, t.height);
     ctx.fillStyle = '#495057'; ctx.fillRect(t.x - 5, t.y, t.width + 10, 5);
 }
+
+function drawStartScreen() {
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    drawPixelText(ui.title.text, ui.title.x, ui.title.y, 40, '#FFFFFF', 'center');
+    ctx.fillStyle = '#e07a5f';
+    ctx.fillRect(ui.startButton.x, ui.startButton.y, ui.startButton.width, ui.startButton.height);
+    drawPixelText(ui.startButton.text, ui.startButton.x + ui.startButton.width / 2, ui.startButton.y + ui.startButton.height / 2, 20, '#FFFFFF', 'center', 'middle');
+}
+
+function drawMusicIcon(x, y) {
+    ctx.fillStyle = '#FFFFFF';
+    const p = 5; // Pixel size, assuming a 40x40 button
+    ctx.fillRect(x + p * 4, y + p, p, p * 5);
+    ctx.fillRect(x + p, y + p * 5, p * 4, p * 2);
+    ctx.fillRect(x + p * 5, y + p, p * 2, p);
+}
+
+function drawSfxIcon(x, y) {
+    ctx.fillStyle = '#FFFFFF';
+    const p = 5; // Pixel size
+    ctx.fillRect(x, y + p * 2, p * 3, p * 4);
+    ctx.fillRect(x + p * 3, y + p, p * 2, p * 6);
+    ctx.fillRect(x + p * 6, y + p * 3, p, p * 2);
+    ctx.fillRect(x + p * 7, y + p * 2, p, p * 4);
+}
+
+function drawGameUI() {
+    // Score, Time, etc.
+    drawPixelText(`Level: ${level}`, 10, 20, 16, '#FFFFFF');
+    drawPixelText(`Money: ${money.toFixed(2)}€`, 10, 45, 16, '#FFFFFF');
+    drawPixelText(`Time: ${Math.ceil(timer)}`, canvas.width - 10, 20, 16, '#FFFFFF', 'right');
+
+    // Sound Buttons
+    drawMusicIcon(ui.musicButton.x, ui.musicButton.y);
+    drawSfxIcon(ui.sfxButton.x, ui.sfxButton.y);
+
+    if (!musicEnabled) {
+        ctx.strokeStyle = 'red'; ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(ui.musicButton.x, ui.musicButton.y);
+        ctx.lineTo(ui.musicButton.x + ui.musicButton.width, ui.musicButton.y + ui.musicButton.height);
+        ctx.stroke();
+    }
+     if (!sfxEnabled) {
+        ctx.strokeStyle = 'red'; ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(ui.sfxButton.x, ui.sfxButton.y);
+        ctx.lineTo(ui.sfxButton.x + ui.sfxButton.width, ui.sfxButton.y + ui.sfxButton.height);
+        ctx.stroke();
+    }
+}
+
 
 // --- Game Objects & State ---
 const player = { x: 400, y: 150, width: 40, height: 40, speed: 4, holding: 'none' };
@@ -126,7 +175,7 @@ const customerColors = { hair: ['#c9a227', '#6a3e29', '#000000'], shirt: ['#9d81
 
 let activeCustomers = [];
 let level = 1, money = 0, timer = 60;
-let gameRunning = false;
+let gameStarted = false;
 let spawnInterval, timerInterval;
 
 // --- Audio ---
@@ -143,52 +192,54 @@ sounds.music.volume = 0.3;
 let musicEnabled = true;
 let sfxEnabled = true;
 
-const musicButton = document.getElementById('toggle-music');
-const sfxButton = document.getElementById('toggle-sfx');
-const startButton = document.getElementById('start-button');
-const startScreen = document.getElementById('start-screen');
-
 let joystick = { active: false, startX: 0, startY: 0, dx: 0, dy: 0 };
 
-musicButton.addEventListener('click', () => {
+function toggleMusic() {
     musicEnabled = !musicEnabled;
-    musicButton.classList.toggle('muted', !musicEnabled);
-    if (gameRunning) musicEnabled ? sounds.music.play() : sounds.music.pause();
-});
+    if (gameStarted && musicEnabled) {
+        sounds.music.play();
+    } else {
+        sounds.music.pause();
+    }
+}
 
-sfxButton.addEventListener('click', () => {
+function toggleSfx() {
     sfxEnabled = !sfxEnabled;
-    sfxButton.classList.toggle('muted', !sfxEnabled);
-});
+}
 
 function playSound(sound) {
     if (sfxEnabled) { sound.currentTime = 0; sound.play(); }
 }
 
 function startGame() {
-    if (gameRunning) return;
-    gameRunning = true;
+    if (gameStarted) return;
+    gameStarted = true;
     if (musicEnabled) sounds.music.play();
-    startScreen.style.display = 'none';
+    level = 1;
+    money = 0;
+    timer = 60;
+    activeCustomers = [];
+    player.x = 400;
+    player.y = 150;
+    player.holding = 'none';
+
+    clearInterval(spawnInterval);
+    clearInterval(timerInterval);
+
     spawnInterval = setInterval(spawnCustomer, 3000 / level);
     timerInterval = setInterval(() => {
         timer -= 1;
         if (timer <= 0) {
             alert(`Shift Over! You earned: ${money.toFixed(2)}€`);
-            level++;
-            timer = 60 - (level - 1) * 5;
-            money = 0;
-            activeCustomers = [];
+            gameStarted = false;
+            sounds.music.pause();
+            sounds.music.currentTime = 0;
             clearInterval(spawnInterval);
             clearInterval(timerInterval);
-            gameRunning = false;
-            startScreen.style.display = 'flex';
         }
     }, 1000);
-    gameLoop();
 }
 
-startButton.addEventListener('click', startGame);
 
 // --- Game Logic ---
 const keys = {};
@@ -289,31 +340,65 @@ function handleServing() {
 
 function gameLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    drawFloor();
-    drawCounter(counter);
-    movePlayer();
-    drawBarista(player);
-    drawCoffeeMachine(coffeeMachine);
-    drawCroissantOven(croissantOven);
-    drawTrashCan(trashCan);
-    updateCustomers();
-    handleServing();
-    activeCustomers.forEach(drawCustomer);
-    if (player.holding !== 'none' && checkCollision(player, trashCan)) {
-        player.holding = 'none';
-        money -= 0.5;
-        playSound(sounds.trash);
-    } else if (player.holding === 'none') {
-        if (checkCollision(player, coffeeMachine)) { player.holding = 'coffee'; playSound(sounds.pickup); }
-        else if (checkCollision(player, croissantOven)) { player.holding = 'croissant'; playSound(sounds.pickup); }
+
+    if (!gameStarted) {
+        drawStartScreen();
+    } else {
+        drawFloor();
+        drawCounter(counter);
+        movePlayer();
+        drawBarista(player);
+        drawCoffeeMachine(coffeeMachine);
+        drawCroissantOven(croissantOven);
+        drawTrashCan(trashCan);
+        updateCustomers();
+        handleServing();
+        activeCustomers.forEach(drawCustomer);
+        if (player.holding !== 'none' && checkCollision(player, trashCan)) {
+            player.holding = 'none';
+            money -= 0.5;
+            playSound(sounds.trash);
+        } else if (player.holding === 'none') {
+            if (checkCollision(player, coffeeMachine)) { player.holding = 'coffee'; playSound(sounds.pickup); }
+            else if (checkCollision(player, croissantOven)) { player.holding = 'croissant'; playSound(sounds.pickup); }
+        }
     }
-    ctx.fillStyle = 'white'; ctx.strokeStyle = 'black'; ctx.lineWidth = 2;
-    ctx.font = '20px Arial';
-    ctx.strokeText(`Level: ${level}`, 10, 20); ctx.fillText(`Level: ${level}`, 10, 20);
-    ctx.strokeText(`Money: ${money.toFixed(2)}€`, 10, 40); ctx.fillText(`Money: ${money.toFixed(2)}€`, 10, 40);
-    ctx.strokeText(`Time: ${Math.ceil(timer)}`, 700, 20); ctx.fillText(`Time: ${Math.ceil(timer)}`, 700, 20);
-    if (gameRunning) requestAnimationFrame(gameLoop);
+
+    // Draw UI on top of everything, it's always visible
+    drawGameUI();
+
+    requestAnimationFrame(gameLoop);
 }
+
+// --- Event Listeners ---
+function handleCanvasClick(event) {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const mouseX = (event.clientX - rect.left) * scaleX;
+    const mouseY = (event.clientY - rect.top) * scaleY;
+
+    if (!gameStarted) {
+        // Check Start Button
+        if (mouseX >= ui.startButton.x && mouseX <= ui.startButton.x + ui.startButton.width &&
+            mouseY >= ui.startButton.y && mouseY <= ui.startButton.y + ui.startButton.height) {
+            startGame();
+        }
+    }
+
+    // Sound buttons are active both in menu and in game
+    if (mouseX >= ui.musicButton.x && mouseX <= ui.musicButton.x + ui.musicButton.width &&
+        mouseY >= ui.musicButton.y && mouseY <= ui.musicButton.y + ui.musicButton.height) {
+        toggleMusic();
+    }
+    if (mouseX >= ui.sfxButton.x && mouseX <= ui.sfxButton.x + ui.sfxButton.width &&
+        mouseY >= ui.sfxButton.y && mouseY <= ui.sfxButton.y + ui.sfxButton.height) {
+        toggleSfx();
+    }
+}
+
+canvas.addEventListener('click', handleCanvasClick);
+
 
 // --- Joystick Logic ---
 const joystickContainer = document.getElementById('joystick-container');
@@ -354,3 +439,8 @@ joystickContainer.addEventListener('touchcancel', handleJoystickEnd);
 document.addEventListener('mousedown', (e) => { if(e.target === joystickContainer || e.target === joystickStick) handleJoystickStart(e); });
 document.addEventListener('mousemove', handleJoystickMove);
 document.addEventListener('mouseup', handleJoystickEnd);
+
+// --- Initial Draw ---
+document.fonts.load('10px "Press Start 2P"').then(() => {
+    gameLoop();
+});
