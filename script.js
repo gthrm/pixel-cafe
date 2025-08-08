@@ -74,22 +74,32 @@ function drawCustomer(c) {
     }
 }
 
-function drawCoffeeMachine(m) {
-    ctx.fillStyle = '#3d405b'; ctx.fillRect(m.x, m.y, m.width, m.height);
-    ctx.fillStyle = '#2a2d3e'; ctx.fillRect(m.x, m.y, m.width, 20);
-    ctx.fillStyle = '#c0c0c0'; ctx.fillRect(m.x + 10, m.y + 25, m.width - 20, 30);
-    ctx.fillStyle = '#e07a5f'; ctx.fillRect(m.x + 20, m.y + 35, 10, 10);
-    ctx.fillStyle = '#81b29a'; ctx.fillRect(m.x + 50, m.y + 35, 10, 10);
-    ctx.fillStyle = '#555555'; ctx.fillRect(m.x + 35, m.y + 55, 10, 15);
-    ctx.fillStyle = '#111111'; ctx.fillRect(m.x + 10, m.y + 70, m.width - 20, 10);
+function drawMachine(m) {
+    ctx.fillStyle = m.baseColor; ctx.fillRect(m.x, m.y, m.width, m.height);
+    ctx.fillStyle = m.topColor; ctx.fillRect(m.x, m.y, m.width, 20);
+
+    if (m.details) {
+        m.details.forEach(d => {
+            ctx.fillStyle = d.color;
+            ctx.fillRect(m.x + d.x, m.y + d.y, d.w, d.h);
+        });
+    }
+
+    // Cooldown progress bar
+    if (m.cooldown > 0) {
+        const barWidth = m.width - 10;
+        const barHeight = 10;
+        const barX = m.x + 5;
+        const barY = m.y - 15;
+        const progressWidth = (m.cooldown / m.timeToComplete) * barWidth;
+
+        ctx.fillStyle = '#222';
+        ctx.fillRect(barX, barY, barWidth, barHeight);
+        ctx.fillStyle = '#e07a5f'; // Reddish for cooldown
+        ctx.fillRect(barX, barY, barWidth - progressWidth, barHeight);
+    }
 }
 
-function drawCroissantOven(m) {
-    ctx.fillStyle = '#444444'; ctx.fillRect(m.x, m.y, m.width, m.height);
-    ctx.fillStyle = '#222222'; ctx.fillRect(m.x + 5, m.y + 5, m.width - 10, m.height - 10);
-    ctx.fillStyle = '#f4a460'; ctx.fillRect(m.x + 15, m.y + 15, m.width - 30, m.height - 40);
-    ctx.fillStyle = '#666666'; ctx.fillRect(m.x + 10, m.y + m.height - 20, m.width - 20, 5);
-}
 
 function drawPixelText(text, x, y, size, color, align = 'left', baseline = 'top') {
     ctx.font = `${size}px "Press Start 2P"`;
@@ -119,6 +129,15 @@ function drawStartScreen() {
     ctx.fillRect(ui.startButton.x, ui.startButton.y, ui.startButton.width, ui.startButton.height);
     drawPixelText(ui.startButton.text, ui.startButton.x + ui.startButton.width / 2, ui.startButton.y + ui.startButton.height / 2, 20, '#FFFFFF', 'center', 'middle');
 }
+
+function drawGameOverScreen() {
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    drawPixelText('Shift Over!', canvas.width / 2, 150, 40, '#FFFFFF', 'center');
+    drawPixelText(`You earned: ${money.toFixed(2)}€`, canvas.width / 2, 250, 20, '#FFFFFF', 'center');
+    drawPixelText('Click to Continue', canvas.width / 2, 350, 16, '#FFFFFF', 'center');
+}
+
 
 function drawMusicIcon(x, y) {
     ctx.fillStyle = '#FFFFFF';
@@ -163,9 +182,26 @@ function drawGameUI() {
 
 
 // --- Game Objects & State ---
-const player = { x: 400, y: 150, width: 40, height: 40, speed: 250, holding: 'none' }; // Speed in pixels per second
-const coffeeMachine = { x: 700, y: 80, width: 80, height: 80 };
-const croissantOven = { x: 20, y: 80, width: 80, height: 80 };
+const player = { x: 400, y: 150, width: 40, height: 40, speed: 250, holding: 'none' };
+const coffeeMachine = {
+    x: 700, y: 80, width: 80, height: 80, cooldown: 0, timeToComplete: 2, item: 'coffee',
+    baseColor: '#3d405b', topColor: '#2a2d3e',
+    details: [
+        { x: 10, y: 25, w: 60, h: 30, color: '#c0c0c0' }, { x: 20, y: 35, w: 10, h: 10, color: '#e07a5f' },
+        { x: 50, y: 35, w: 10, h: 10, color: '#81b29a' }, { x: 35, y: 55, w: 10, h: 15, color: '#555555' },
+        { x: 10, y: 70, w: 60, h: 10, color: '#111111' },
+    ]
+};
+const croissantOven = {
+    x: 20, y: 80, width: 80, height: 80, cooldown: 0, timeToComplete: 3, item: 'croissant',
+    baseColor: '#444444', topColor: '#222222',
+    details: [
+        { x: 5, y: 5, w: 70, h: 70, color: '#222222' }, { x: 15, y: 15, w: 50, h: 50, color: '#f4a460' },
+        { x: 10, y: 75, w: 60, h: 5, color: '#666666' },
+    ]
+};
+const machines = [coffeeMachine, croissantOven];
+
 const trashCan = { x: 380, y: 80, width: 40, height: 60 };
 const counter = { x: 0, y: 250, width: canvas.width, height: 80 };
 const waitingSpots = [ { x: 150, y: 350 }, { x: 250, y: 350 }, { x: 350, y: 350 }, { x: 450, y: 350 }];
@@ -173,7 +209,7 @@ const customerColors = { hair: ['#c9a227', '#6a3e29', '#000000'], shirt: ['#9d81
 
 let activeCustomers = [];
 let level = 1, money = 0, timer = 60;
-let gameStarted = false;
+let gameState = 'start';
 let spawnInterval;
 
 // --- Audio ---
@@ -194,7 +230,7 @@ let joystick = { active: false, startX: 0, startY: 0, dx: 0, dy: 0 };
 
 function toggleMusic() {
     musicEnabled = !musicEnabled;
-    if (gameStarted && musicEnabled) {
+    if (gameState === 'playing' && musicEnabled) {
         sounds.music.play();
     } else {
         sounds.music.pause();
@@ -210,8 +246,7 @@ function playSound(sound) {
 }
 
 function startGame() {
-    if (gameStarted) return;
-    gameStarted = true;
+    gameState = 'playing';
     if (musicEnabled) sounds.music.play();
     level = 1;
     money = 0;
@@ -220,6 +255,7 @@ function startGame() {
     player.x = 400;
     player.y = 150;
     player.holding = 'none';
+    machines.forEach(m => { m.cooldown = 0; });
 
     clearInterval(spawnInterval);
     spawnInterval = setInterval(spawnCustomer, 3000 / level);
@@ -270,7 +306,7 @@ function updateCustomers(dt) {
             const queueIndex = queue.indexOf(c);
             if (queueIndex !== -1) c.targetX = waitingSpots[queueIndex].x;
         }
-        const speed = 120 * dt; // Speed in pixels per second
+        const speed = 120 * dt;
         if (c.x < c.targetX) c.x = Math.min(c.x + speed, c.targetX);
         else if (c.x > c.targetX) c.x = Math.max(c.x - speed, c.targetX);
         if (c.state === 'ENTERING' && c.x === c.targetX) c.state = 'ORDERING';
@@ -324,25 +360,38 @@ function handleServing() {
     }
 }
 
+function updateMachines(dt) {
+    machines.forEach(m => {
+        if (m.cooldown > 0) {
+            m.cooldown -= dt;
+        }
+    });
+}
+
 // --- Main Update and Draw Functions ---
 function update(dt) {
     movePlayer(dt);
     updateCustomers(dt);
     handleServing();
+    updateMachines(dt);
 
     if (player.holding !== 'none' && checkCollision(player, trashCan)) {
         player.holding = 'none';
         money -= 0.5;
         playSound(sounds.trash);
     } else if (player.holding === 'none') {
-        if (checkCollision(player, coffeeMachine)) { player.holding = 'coffee'; playSound(sounds.pickup); }
-        else if (checkCollision(player, croissantOven)) { player.holding = 'croissant'; playSound(sounds.pickup); }
+        machines.forEach(m => {
+            if (checkCollision(player, m) && m.cooldown <= 0) {
+                player.holding = m.item;
+                m.cooldown = m.timeToComplete;
+                playSound(sounds.pickup);
+            }
+        });
     }
 
     timer -= dt;
     if (timer <= 0) {
-        alert(`Shift Over! You earned: ${money.toFixed(2)}€`);
-        gameStarted = false;
+        gameState = 'over';
         sounds.music.pause();
         sounds.music.currentTime = 0;
         clearInterval(spawnInterval);
@@ -352,18 +401,26 @@ function update(dt) {
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    if (!gameStarted) {
+    if (gameState === 'start') {
         drawStartScreen();
-    } else {
+    } else if (gameState === 'playing') {
         drawFloor();
         drawCounter(counter);
         drawBarista(player);
-        drawCoffeeMachine(coffeeMachine);
-        drawCroissantOven(croissantOven);
+        machines.forEach(drawMachine);
         drawTrashCan(trashCan);
         activeCustomers.forEach(drawCustomer);
+        drawGameUI();
+    } else if (gameState === 'over') {
+        drawFloor();
+        drawCounter(counter);
+        drawBarista(player);
+        machines.forEach(drawMachine);
+        drawTrashCan(trashCan);
+        activeCustomers.forEach(drawCustomer);
+        drawGameUI();
+        drawGameOverScreen();
     }
-    drawGameUI();
 }
 
 // --- Joystick Visual Update ---
@@ -389,12 +446,12 @@ function gameLoop(timestamp) {
     const deltaTime = (timestamp - lastTime) / 1000;
     lastTime = timestamp;
 
-    if (gameStarted) {
+    if (gameState === 'playing') {
         update(deltaTime);
     }
     
     draw();
-    drawJoystick(); // Sync joystick visuals with the game loop
+    drawJoystick();
 
     requestAnimationFrame(gameLoop);
 }
@@ -408,13 +465,16 @@ function handleCanvasClick(event) {
     const mouseX = (event.clientX - rect.left) * scaleX;
     const mouseY = (event.clientY - rect.top) * scaleY;
 
-    if (!gameStarted) {
+    if (gameState === 'start') {
         if (mouseX >= ui.startButton.x && mouseX <= ui.startButton.x + ui.startButton.width &&
             mouseY >= ui.startButton.y && mouseY <= ui.startButton.y + ui.startButton.height) {
             startGame();
         }
+    } else if (gameState === 'over') {
+        gameState = 'start';
     }
 
+    // Sound buttons are always active
     if (mouseX >= ui.musicButton.x && mouseX <= ui.musicButton.x + ui.musicButton.width &&
         mouseY >= ui.musicButton.y && mouseY <= ui.musicButton.y + ui.musicButton.height) {
         toggleMusic();
