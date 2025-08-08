@@ -85,18 +85,36 @@ function drawMachine(m) {
         });
     }
 
-    // Cooldown progress bar
-    if (m.cooldown > 0) {
-        const barWidth = m.width - 10;
-        const barHeight = 10;
-        const barX = m.x + 5;
-        const barY = m.y - 15;
-        const progressWidth = (m.cooldown / m.timeToComplete) * barWidth;
+    // Item-specific visual logic
+    if (m.item === 'croissant') {
+        ctx.fillStyle = '#FFFACD'; // Light yellow glow
+        ctx.fillRect(m.x + 15, m.y + 15, 50, 50);
+        if (m.cooldowns[0] <= 0) drawCroissantIcon(m.x + 20, m.y + 35);
+        if (m.cooldowns[1] <= 0) drawCroissantIcon(m.x + 45, m.y + 35);
+    } else if (m.item === 'coffee') {
+        if (m.cooldowns[0] <= 0) {
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(m.x + 35, m.y + 45, 10, 12);
+        }
+    }
 
-        ctx.fillStyle = '#222';
-        ctx.fillRect(barX, barY, barWidth, barHeight);
-        ctx.fillStyle = '#e07a5f'; // Reddish for cooldown
-        ctx.fillRect(barX, barY, barWidth - progressWidth, barHeight);
+    // Cooldown progress bars
+    const barHeight = 10;
+    const barY = m.y - 15;
+    const totalBarWidth = m.width - 10;
+    const slotWidth = totalBarWidth / m.cooldowns.length;
+    const barPadding = m.cooldowns.length > 1 ? 5 : 0;
+    const barWidth = slotWidth - barPadding;
+
+    for (let i = 0; i < m.cooldowns.length; i++) {
+        const barX = m.x + 5 + (i * slotWidth);
+        if (m.cooldowns[i] > 0) {
+            const progressWidth = (m.cooldowns[i] / m.timeToComplete) * barWidth;
+            ctx.fillStyle = '#222';
+            ctx.fillRect(barX, barY, barWidth, barHeight);
+            ctx.fillStyle = '#e07a5f';
+            ctx.fillRect(barX, barY, barWidth - progressWidth, barHeight);
+        }
     }
 }
 
@@ -114,6 +132,15 @@ function drawCounter(c) {
     ctx.fillStyle = '#80421d'; ctx.fillRect(c.x, c.y, c.width, 20);
     ctx.fillStyle = '#5c2f10'; ctx.fillRect(c.x + 20, c.y + c.height, 30, canvas.height - c.y - c.height);
     ctx.fillRect(c.x + c.width - 50, c.y + c.height, 30, canvas.height - c.y - c.height);
+
+    // Cash Register
+    ctx.fillStyle = '#888888';
+    ctx.fillRect(100, 220, 40, 30);
+    ctx.fillStyle = '#444444';
+    ctx.fillRect(105, 225, 30, 15);
+
+    // Order Here Sign
+    drawPixelText('Order Here', 100, 260, 10, '#FFFFFF');
 }
 
 function drawTrashCan(t) {
@@ -157,8 +184,7 @@ function drawSfxIcon(x, y) {
 }
 
 function drawGameUI() {
-    drawPixelText(`Level: ${level}`, 10, 20, 16, '#FFFFFF');
-    drawPixelText(`Money: ${money.toFixed(2)}€`, 10, 45, 16, '#FFFFFF');
+    drawPixelText(`Money: ${money.toFixed(2)}€`, 10, 20, 16, '#FFFFFF');
     drawPixelText(`Time: ${Math.ceil(timer)}`, canvas.width - 10, 20, 16, '#FFFFFF', 'right');
 
     drawMusicIcon(ui.musicButton.x, ui.musicButton.y);
@@ -184,19 +210,20 @@ function drawGameUI() {
 // --- Game Objects & State ---
 const player = { x: 400, y: 150, width: 40, height: 40, speed: 250, holding: 'none' };
 const coffeeMachine = {
-    x: 700, y: 80, width: 80, height: 80, cooldown: 0, timeToComplete: 2, item: 'coffee',
+    x: 700, y: 80, width: 80, height: 80, cooldowns: [0], timeToComplete: 2, item: 'coffee',
     baseColor: '#3d405b', topColor: '#2a2d3e',
     details: [
-        { x: 10, y: 25, w: 60, h: 30, color: '#c0c0c0' }, { x: 20, y: 35, w: 10, h: 10, color: '#e07a5f' },
-        { x: 50, y: 35, w: 10, h: 10, color: '#81b29a' }, { x: 35, y: 55, w: 10, h: 15, color: '#555555' },
-        { x: 10, y: 70, w: 60, h: 10, color: '#111111' },
+        { x: 10, y: 25, w: 60, h: 30, color: '#c0c0c0' }, { x: 15, y: 30, w: 10, h: 10, color: '#e07a5f' },
+        { x: 35, y: 30, w: 10, h: 10, color: '#81b29a' }, { x: 55, y: 30, w: 10, h: 10, color: '#e07a5f' },
+        { x: 25, y: 55, w: 10, h: 15, color: '#555555' }, { x: 45, y: 55, w: 10, h: 15, color: '#555555' },
+        { x: 5, y: 55, w: 5, h: 20, color: '#777777' }, { x: 10, y: 70, w: 60, h: 10, color: '#111111' },
     ]
 };
 const croissantOven = {
-    x: 20, y: 80, width: 80, height: 80, cooldown: 0, timeToComplete: 3, item: 'croissant',
+    x: 20, y: 80, width: 80, height: 80, cooldowns: [0, 0], timeToComplete: 3, item: 'croissant',
     baseColor: '#444444', topColor: '#222222',
     details: [
-        { x: 5, y: 5, w: 70, h: 70, color: '#222222' }, { x: 15, y: 15, w: 50, h: 50, color: '#f4a460' },
+        { x: 5, y: 5, w: 70, h: 70, color: '#222222' },
         { x: 10, y: 75, w: 60, h: 5, color: '#666666' },
     ]
 };
@@ -207,8 +234,7 @@ const counter = { x: 0, y: 250, width: canvas.width, height: 80 };
 const waitingSpots = [ { x: 150, y: 350 }, { x: 250, y: 350 }, { x: 350, y: 350 }, { x: 450, y: 350 }];
 const customerColors = { hair: ['#c9a227', '#6a3e29', '#000000'], shirt: ['#9d8189', '#5f9ea0', '#a0a0a0'] };
 
-let activeCustomers = [];
-let level = 1, money = 0, timer = 60;
+let money = 0, timer = 60;
 let gameState = 'start';
 let spawnInterval;
 
@@ -248,17 +274,16 @@ function playSound(sound) {
 function startGame() {
     gameState = 'playing';
     if (musicEnabled) sounds.music.play();
-    level = 1;
     money = 0;
     timer = 60;
     activeCustomers = [];
     player.x = 400;
     player.y = 150;
     player.holding = 'none';
-    machines.forEach(m => { m.cooldown = 0; });
+    machines.forEach(m => { m.cooldowns = m.cooldowns.map(() => 0); });
 
     clearInterval(spawnInterval);
-    spawnInterval = setInterval(spawnCustomer, 3000 / level);
+    spawnInterval = setInterval(spawnCustomer, 3000);
 }
 
 
@@ -362,8 +387,10 @@ function handleServing() {
 
 function updateMachines(dt) {
     machines.forEach(m => {
-        if (m.cooldown > 0) {
-            m.cooldown -= dt;
+        for (let i = 0; i < m.cooldowns.length; i++) {
+            if (m.cooldowns[i] > 0) {
+                m.cooldowns[i] -= dt;
+            }
         }
     });
 }
@@ -381,10 +408,15 @@ function update(dt) {
         playSound(sounds.trash);
     } else if (player.holding === 'none') {
         machines.forEach(m => {
-            if (checkCollision(player, m) && m.cooldown <= 0) {
-                player.holding = m.item;
-                m.cooldown = m.timeToComplete;
-                playSound(sounds.pickup);
+            if (checkCollision(player, m)) {
+                for (let i = 0; i < m.cooldowns.length; i++) {
+                    if (m.cooldowns[i] <= 0) {
+                        player.holding = m.item;
+                        m.cooldowns[i] = m.timeToComplete;
+                        playSound(sounds.pickup);
+                        return;
+                    }
+                }
             }
         });
     }
@@ -403,23 +435,17 @@ function draw() {
 
     if (gameState === 'start') {
         drawStartScreen();
-    } else if (gameState === 'playing') {
+    } else if (gameState === 'playing' || gameState === 'over') {
         drawFloor();
         drawCounter(counter);
-        drawBarista(player);
         machines.forEach(drawMachine);
         drawTrashCan(trashCan);
+        drawBarista(player); // Draw player on top of machines
         activeCustomers.forEach(drawCustomer);
         drawGameUI();
-    } else if (gameState === 'over') {
-        drawFloor();
-        drawCounter(counter);
-        drawBarista(player);
-        machines.forEach(drawMachine);
-        drawTrashCan(trashCan);
-        activeCustomers.forEach(drawCustomer);
-        drawGameUI();
-        drawGameOverScreen();
+        if (gameState === 'over') {
+            drawGameOverScreen();
+        }
     }
 }
 
