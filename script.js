@@ -23,11 +23,11 @@ function drawFloor() {
 function drawBarista(p) {
     ctx.fillStyle = '#f2cc8f'; ctx.fillRect(p.x + 5, p.y, p.width - 10, 15);
     ctx.fillStyle = '#222222'; ctx.fillRect(p.x + 5, p.y, p.width - 10, 5);
-    ctx.fillStyle = 'white'; ctx.fillRect(p.x + 10, p.y + 5, 5, 5); ctx.fillRect(p.x + 25, p.y + 5, 5, 5);
+    ctx.fillStyle = '#FFFFFF'; ctx.fillRect(p.x + 10, p.y + 5, 5, 5); ctx.fillRect(p.x + 25, p.y + 5, 5, 5);
     ctx.fillStyle = '#4a4e69'; ctx.fillRect(p.x, p.y + 15, p.width, p.height - 15);
     ctx.fillStyle = '#f2e9e4'; ctx.fillRect(p.x, p.y + 15, p.width, 5);
     if (p.holding === 'coffee') {
-        ctx.fillStyle = 'white'; ctx.fillRect(p.x + 15, p.y + 25, 10, 12);
+        ctx.fillStyle = '#FFFFFF'; ctx.fillRect(p.x + 15, p.y + 25, 10, 12);
         ctx.fillStyle = '#6f4e37'; ctx.fillRect(p.x + 15, p.y + 25, 10, 5);
     } else if (p.holding === 'croissant') {
         ctx.fillStyle = '#e0ac69';
@@ -41,7 +41,7 @@ function drawBarista(p) {
 function drawCoffeeIcon(x, y) {
     ctx.fillStyle = '#6f4e37';
     ctx.fillRect(x, y, 12, 15);
-    ctx.fillStyle = 'white';
+    ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(x, y, 12, 3);
 }
 
@@ -58,9 +58,9 @@ function drawCustomer(c) {
     ctx.fillRect(c.x, c.y + 15, c.width, c.height - 15);
     ctx.fillStyle = '#f2cc8f'; ctx.fillRect(c.x + 5, c.y, c.width - 10, 15);
     ctx.fillStyle = c.hairColor; ctx.fillRect(c.x + 5, c.y, c.width - 10, 5);
-    ctx.fillStyle = 'white'; ctx.fillRect(c.x + 10, c.y + 5, 5, 5); ctx.fillRect(c.x + 25, c.y + 5, 5, 5);
+    ctx.fillStyle = '#FFFFFF'; ctx.fillRect(c.x + 10, c.y + 5, 5, 5); ctx.fillRect(c.x + 25, c.y + 5, 5, 5);
     if (c.state === 'ORDERING') {
-        ctx.fillStyle = 'white';
+        ctx.fillStyle = '#FFFFFF';
         const bubbleWidth = (c.order.coffee && c.order.croissant) ? 40 : 25;
         ctx.beginPath(); ctx.roundRect(c.x + (c.width - bubbleWidth) / 2, c.y - 30, bubbleWidth, 20, [10]); ctx.fill();
         let iconX = c.x + (c.width - bubbleWidth) / 2 + 5;
@@ -122,7 +122,7 @@ function drawStartScreen() {
 
 function drawMusicIcon(x, y) {
     ctx.fillStyle = '#FFFFFF';
-    const p = 5; // Pixel size, assuming a 40x40 button
+    const p = 5;
     ctx.fillRect(x + p * 4, y + p, p, p * 5);
     ctx.fillRect(x + p, y + p * 5, p * 4, p * 2);
     ctx.fillRect(x + p * 5, y + p, p * 2, p);
@@ -130,7 +130,7 @@ function drawMusicIcon(x, y) {
 
 function drawSfxIcon(x, y) {
     ctx.fillStyle = '#FFFFFF';
-    const p = 5; // Pixel size
+    const p = 5;
     ctx.fillRect(x, y + p * 2, p * 3, p * 4);
     ctx.fillRect(x + p * 3, y + p, p * 2, p * 6);
     ctx.fillRect(x + p * 6, y + p * 3, p, p * 2);
@@ -138,12 +138,10 @@ function drawSfxIcon(x, y) {
 }
 
 function drawGameUI() {
-    // Score, Time, etc.
     drawPixelText(`Level: ${level}`, 10, 20, 16, '#FFFFFF');
     drawPixelText(`Money: ${money.toFixed(2)}€`, 10, 45, 16, '#FFFFFF');
     drawPixelText(`Time: ${Math.ceil(timer)}`, canvas.width - 10, 20, 16, '#FFFFFF', 'right');
 
-    // Sound Buttons
     drawMusicIcon(ui.musicButton.x, ui.musicButton.y);
     drawSfxIcon(ui.sfxButton.x, ui.sfxButton.y);
 
@@ -165,7 +163,7 @@ function drawGameUI() {
 
 
 // --- Game Objects & State ---
-const player = { x: 400, y: 150, width: 40, height: 40, speed: 4, holding: 'none' };
+const player = { x: 400, y: 150, width: 40, height: 40, speed: 250, holding: 'none' }; // Speed in pixels per second
 const coffeeMachine = { x: 700, y: 80, width: 80, height: 80 };
 const croissantOven = { x: 20, y: 80, width: 80, height: 80 };
 const trashCan = { x: 380, y: 80, width: 40, height: 60 };
@@ -176,7 +174,7 @@ const customerColors = { hair: ['#c9a227', '#6a3e29', '#000000'], shirt: ['#9d81
 let activeCustomers = [];
 let level = 1, money = 0, timer = 60;
 let gameStarted = false;
-let spawnInterval, timerInterval;
+let spawnInterval;
 
 // --- Audio ---
 const sounds = {
@@ -224,20 +222,7 @@ function startGame() {
     player.holding = 'none';
 
     clearInterval(spawnInterval);
-    clearInterval(timerInterval);
-
     spawnInterval = setInterval(spawnCustomer, 3000 / level);
-    timerInterval = setInterval(() => {
-        timer -= 1;
-        if (timer <= 0) {
-            alert(`Shift Over! You earned: ${money.toFixed(2)}€`);
-            gameStarted = false;
-            sounds.music.pause();
-            sounds.music.currentTime = 0;
-            clearInterval(spawnInterval);
-            clearInterval(timerInterval);
-        }
-    }, 1000);
 }
 
 
@@ -246,15 +231,16 @@ const keys = {};
 document.addEventListener('keydown', (e) => keys[e.key] = true);
 document.addEventListener('keyup', (e) => keys[e.key] = false);
 
-function movePlayer() {
-    if (keys['ArrowUp']) player.y -= player.speed;
-    if (keys['ArrowDown']) player.y += player.speed;
-    if (keys['ArrowLeft']) player.x -= player.speed;
-    if (keys['ArrowRight']) player.x += player.speed;
+function movePlayer(dt) {
+    const moveSpeed = player.speed * dt;
+    if (keys['ArrowUp']) player.y -= moveSpeed;
+    if (keys['ArrowDown']) player.y += moveSpeed;
+    if (keys['ArrowLeft']) player.x -= moveSpeed;
+    if (keys['ArrowRight']) player.x += moveSpeed;
     if (joystick.active && (joystick.dx !== 0 || joystick.dy !== 0)) {
         const magnitude = Math.sqrt(joystick.dx * joystick.dx + joystick.dy * joystick.dy);
-        player.x += (joystick.dx / magnitude) * player.speed;
-        player.y += (joystick.dy / magnitude) * player.speed;
+        player.x += (joystick.dx / magnitude) * moveSpeed;
+        player.y += (joystick.dy / magnitude) * moveSpeed;
     }
     player.x = Math.max(0, Math.min(player.x, canvas.width - player.width));
     player.y = Math.max(0, Math.min(player.y, counter.y - player.height));
@@ -277,14 +263,14 @@ function spawnCustomer() {
     activeCustomers.push(newCustomer);
 }
 
-function updateCustomers() {
+function updateCustomers(dt) {
     const queue = activeCustomers.filter(c => c.state === 'ENTERING' || c.state === 'ORDERING');
     activeCustomers.forEach(c => {
         if (c.state === 'ENTERING' || c.state === 'ORDERING') {
             const queueIndex = queue.indexOf(c);
             if (queueIndex !== -1) c.targetX = waitingSpots[queueIndex].x;
         }
-        const speed = 2;
+        const speed = 120 * dt; // Speed in pixels per second
         if (c.x < c.targetX) c.x = Math.min(c.x + speed, c.targetX);
         else if (c.x > c.targetX) c.x = Math.max(c.x - speed, c.targetX);
         if (c.state === 'ENTERING' && c.x === c.targetX) c.state = 'ORDERING';
@@ -338,7 +324,32 @@ function handleServing() {
     }
 }
 
-function gameLoop() {
+// --- Main Update and Draw Functions ---
+function update(dt) {
+    movePlayer(dt);
+    updateCustomers(dt);
+    handleServing();
+
+    if (player.holding !== 'none' && checkCollision(player, trashCan)) {
+        player.holding = 'none';
+        money -= 0.5;
+        playSound(sounds.trash);
+    } else if (player.holding === 'none') {
+        if (checkCollision(player, coffeeMachine)) { player.holding = 'coffee'; playSound(sounds.pickup); }
+        else if (checkCollision(player, croissantOven)) { player.holding = 'croissant'; playSound(sounds.pickup); }
+    }
+
+    timer -= dt;
+    if (timer <= 0) {
+        alert(`Shift Over! You earned: ${money.toFixed(2)}€`);
+        gameStarted = false;
+        sounds.music.pause();
+        sounds.music.currentTime = 0;
+        clearInterval(spawnInterval);
+    }
+}
+
+function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     if (!gameStarted) {
@@ -346,29 +357,48 @@ function gameLoop() {
     } else {
         drawFloor();
         drawCounter(counter);
-        movePlayer();
         drawBarista(player);
         drawCoffeeMachine(coffeeMachine);
         drawCroissantOven(croissantOven);
         drawTrashCan(trashCan);
-        updateCustomers();
-        handleServing();
         activeCustomers.forEach(drawCustomer);
-        if (player.holding !== 'none' && checkCollision(player, trashCan)) {
-            player.holding = 'none';
-            money -= 0.5;
-            playSound(sounds.trash);
-        } else if (player.holding === 'none') {
-            if (checkCollision(player, coffeeMachine)) { player.holding = 'coffee'; playSound(sounds.pickup); }
-            else if (checkCollision(player, croissantOven)) { player.holding = 'croissant'; playSound(sounds.pickup); }
-        }
     }
-
-    // Draw UI on top of everything, it's always visible
     drawGameUI();
+}
+
+// --- Joystick Visual Update ---
+const joystickStick = document.getElementById('joystick-stick');
+function drawJoystick() {
+    if (joystick.active) {
+        const angle = Math.atan2(joystick.dy, joystick.dx);
+        const distance = Math.min(30, Math.sqrt(joystick.dx * joystick.dx + joystick.dy * joystick.dy));
+        const stickX = distance * Math.cos(angle);
+        const stickY = distance * Math.sin(angle);
+        joystickStick.style.transform = `translate(${stickX}px, ${stickY}px)`;
+    } else {
+        joystickStick.style.transform = 'translate(0, 0)';
+    }
+}
+
+// --- Game Loop ---
+let lastTime = 0;
+function gameLoop(timestamp) {
+    if (!lastTime) {
+        lastTime = timestamp;
+    }
+    const deltaTime = (timestamp - lastTime) / 1000;
+    lastTime = timestamp;
+
+    if (gameStarted) {
+        update(deltaTime);
+    }
+    
+    draw();
+    drawJoystick(); // Sync joystick visuals with the game loop
 
     requestAnimationFrame(gameLoop);
 }
+
 
 // --- Event Listeners ---
 function handleCanvasClick(event) {
@@ -379,14 +409,12 @@ function handleCanvasClick(event) {
     const mouseY = (event.clientY - rect.top) * scaleY;
 
     if (!gameStarted) {
-        // Check Start Button
         if (mouseX >= ui.startButton.x && mouseX <= ui.startButton.x + ui.startButton.width &&
             mouseY >= ui.startButton.y && mouseY <= ui.startButton.y + ui.startButton.height) {
             startGame();
         }
     }
 
-    // Sound buttons are active both in menu and in game
     if (mouseX >= ui.musicButton.x && mouseX <= ui.musicButton.x + ui.musicButton.width &&
         mouseY >= ui.musicButton.y && mouseY <= ui.musicButton.y + ui.musicButton.height) {
         toggleMusic();
@@ -402,7 +430,6 @@ canvas.addEventListener('click', handleCanvasClick);
 
 // --- Joystick Logic ---
 const joystickContainer = document.getElementById('joystick-container');
-const joystickStick = document.getElementById('joystick-stick');
 
 function handleJoystickStart(e) {
     joystick.active = true;
@@ -417,11 +444,6 @@ function handleJoystickMove(e) {
     const touch = e.changedTouches ? e.changedTouches[0] : e;
     joystick.dx = touch.clientX - joystick.startX;
     joystick.dy = touch.clientY - joystick.startY;
-    const angle = Math.atan2(joystick.dy, joystick.dx);
-    const distance = Math.min(30, Math.sqrt(joystick.dx * joystick.dx + joystick.dy * joystick.dy));
-    const stickX = distance * Math.cos(angle);
-    const stickY = distance * Math.sin(angle);
-    joystickStick.style.transform = `translate(${stickX}px, ${stickY}px)`;
 }
 
 function handleJoystickEnd(e) {
@@ -429,18 +451,17 @@ function handleJoystickEnd(e) {
     joystick.active = false;
     joystick.dx = 0;
     joystick.dy = 0;
-    joystickStick.style.transform = 'translate(0, 0)';
 }
 
 joystickContainer.addEventListener('touchstart', handleJoystickStart, { passive: false });
 joystickContainer.addEventListener('touchmove', handleJoystickMove, { passive: false });
 joystickContainer.addEventListener('touchend', handleJoystickEnd);
 joystickContainer.addEventListener('touchcancel', handleJoystickEnd);
-document.addEventListener('mousedown', (e) => { if(e.target === joystickContainer || e.target === joystickStick) handleJoystickStart(e); });
+document.addEventListener('mousedown', (e) => { if(e.target === joystickContainer || e.target.parentElement === joystickContainer) handleJoystickStart(e); });
 document.addEventListener('mousemove', handleJoystickMove);
 document.addEventListener('mouseup', handleJoystickEnd);
 
 // --- Initial Draw ---
 document.fonts.load('10px "Press Start 2P"').then(() => {
-    gameLoop();
+    requestAnimationFrame(gameLoop);
 });
